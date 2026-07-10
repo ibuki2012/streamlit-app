@@ -98,34 +98,37 @@ if st.session_state.tasks:
     st.subheader("タスク一覧")
 
     if not filtered_indexes:
-        st.info("該当するタスクはありません。")
+        st.info("現在のフィルターではタスクが表示されていません。")
+        if st.session_state.task_filter != "すべて" and st.button("すべてを表示"):
+            st.session_state.task_filter = "すべて"
+            st.rerun()
+    else:
+        for index in filtered_indexes:
+            task = st.session_state.tasks[index]
+            task_col, delete_col = st.columns([0.85, 0.15])
+            checkbox_key = f"task_done_{index}_{task['text']}"
+            delete_key = f"delete_task_{index}_{task['text']}"
 
-    for index in filtered_indexes:
-        task = st.session_state.tasks[index]
-        task_col, delete_col = st.columns([0.85, 0.15])
-        checkbox_key = f"task_done_{index}_{task['text']}"
-        delete_key = f"delete_task_{index}_{task['text']}"
+            with task_col:
+                is_done = st.checkbox(task["text"], value=task["done"], key=checkbox_key)
+                if is_done != task["done"]:
+                    previous_done = task["done"]
+                    st.session_state.tasks[index]["done"] = is_done
+                    try:
+                        save_tasks_to_file(st.session_state.tasks)
+                        st.rerun()
+                    except OSError as error:
+                        st.session_state.tasks[index]["done"] = previous_done
+                        st.error(f"todos.json の保存に失敗しました: {error}")
 
-        with task_col:
-            is_done = st.checkbox(task["text"], value=task["done"], key=checkbox_key)
-            if is_done != task["done"]:
-                previous_done = task["done"]
-                st.session_state.tasks[index]["done"] = is_done
-                try:
-                    save_tasks_to_file(st.session_state.tasks)
-                    st.rerun()
-                except OSError as error:
-                    st.session_state.tasks[index]["done"] = previous_done
-                    st.error(f"todos.json の保存に失敗しました: {error}")
-
-        with delete_col:
-            if st.button("削除", key=delete_key):
-                deleted_task = st.session_state.tasks.pop(index)
-                try:
-                    save_tasks_to_file(st.session_state.tasks)
-                    st.rerun()
-                except OSError as error:
-                    st.session_state.tasks.insert(index, deleted_task)
-                    st.error(f"todos.json の保存に失敗しました: {error}")
+            with delete_col:
+                if st.button("削除", key=delete_key):
+                    deleted_task = st.session_state.tasks.pop(index)
+                    try:
+                        save_tasks_to_file(st.session_state.tasks)
+                        st.rerun()
+                    except OSError as error:
+                        st.session_state.tasks.insert(index, deleted_task)
+                        st.error(f"todos.json の保存に失敗しました: {error}")
 else:
     st.info("タスクはまだありません。")
