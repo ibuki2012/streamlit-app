@@ -55,6 +55,9 @@ if "tasks" not in st.session_state:
 if "task_input" not in st.session_state:
     st.session_state.task_input = ""
 
+if "task_filter" not in st.session_state:
+    st.session_state.task_filter = "すべて"
+
 st.session_state.tasks = normalize_tasks(st.session_state.tasks)
 
 st.text_input("タスクを入力", key="task_input")
@@ -80,7 +83,25 @@ if st.button("追加"):
 
 if st.session_state.tasks:
     st.subheader("タスク一覧")
-    for index, task in enumerate(st.session_state.tasks):
+    filter_options = ["すべて", "未完了", "完了"]
+    selected_filter = st.radio("表示フィルター", filter_options, key="task_filter")
+
+    if selected_filter == "未完了":
+        filtered_indexes = [
+            index for index, task in enumerate(st.session_state.tasks) if not task["done"]
+        ]
+    elif selected_filter == "完了":
+        filtered_indexes = [
+            index for index, task in enumerate(st.session_state.tasks) if task["done"]
+        ]
+    else:
+        filtered_indexes = list(range(len(st.session_state.tasks)))
+
+    if not filtered_indexes:
+        st.info("該当するタスクはありません。")
+
+    for index in filtered_indexes:
+        task = st.session_state.tasks[index]
         task_col, delete_col = st.columns([0.85, 0.15])
         checkbox_key = f"task_done_{index}_{task['text']}"
         delete_key = f"delete_task_{index}_{task['text']}"
